@@ -1,0 +1,16 @@
+What I used to make this :
+        https://www.coranac.com/tonc/text/toc.htm
+        https://github.com/tbelaire/rusty-TONC
+        http://csclub.uwaterloo.ca/%7Etbelaire/blog/posts/gba-rust-1.html (and all this articles)
+        http://problemkaputt.de/gbatek.htm
+        http://www.devrs.com/gba/files/gbadevfaqs.php
+        https://github.com/exoticorn/gba-rust (for all the code atm)
+
+
+        Jeff Frohwein for crt0 and lnkscript
+
+
+
+ToDo:
+    ARM/Thumb switching 
+    a complete library.
