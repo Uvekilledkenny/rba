@@ -6,10 +6,12 @@ authors = ["uvekilledkenny"]
 
 [profile.dev]
 panic = "abort"
+opt-level = 3
 lto = true
 
 [profile.release]
 panic = "abort"
+opt-level = 3
 lto = true
 
 [lib]

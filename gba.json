@@ -1,9 +1,7 @@
 {
 	"data-layout"         : "e-m:e-p:32:32-i64:64-v128:64:128-a:0:32-n32-S64",
 	"llvm-target"         : "thumbv4t-none-eabi",
-	"ar"                  : "arm-none-eabi-ar",
-	"linker"              : "arm-none-eabi-gcc",
-    "linker-flavor"       : "gcc",
+	"linker-flavor"		  : "gcc",
 	"target-endian"       : "little",
 	"target-pointer-width": "32",
 	"cpu"                 : "arm7tdmi",
@@ -16,6 +14,7 @@
 	"no-default-libraries": true,
 	"archive-format"      : "gnu",
 	"pre-link-args"       : [
+		"-mthumb-interwork",
 		"-specs=gba.specs",
 		"-lsysbase",
 		"-lc"
