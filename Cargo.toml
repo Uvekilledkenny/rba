@@ -1,0 +1,16 @@
+[package]
+
+name = "gbatest"
+version = "0.0.1"
+authors = ["uvekilledkenny"]
+
+[profile.dev]
+panic = "abort"
+lto = true
+
+[profile.release]
+panic = "abort"
+lto = true
+
+[lib]
+crate-type = ["staticlib"]
