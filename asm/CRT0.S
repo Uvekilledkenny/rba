@@ -1,7 +1,7 @@
         .text
 
-        .equ __FastInterrupts, 1
-@       .equ __SingleInterrupts, 1
+@       .equ __FastInterrupts, 1
+        .equ __SingleInterrupts, 1
 @       .equ __MultipleInterrupts, 1
 
 	.global     _start
@@ -58,7 +58,7 @@ start_vector:
 @---------------------------------------------------------------------------------
 @ Interrupt Support
 @---------------------------------------------------------------------------------
-        ldr     r1, =__intr_vector_buf  @ Set Interrupt Address
+        ldr     r1, =__intr_vector_buf          @ Set Interrupt Address
         ldr     r0, =intr_main
         str     r0, [r1]
 
@@ -199,12 +199,19 @@ CIDExit:
 
         .arm
 
-        .ifdef __FastInterrupts                         @ Fast interrupt
+@---------------------------------------------------------------------------------
+@ Fast Interrupts
+@---------------------------------------------------------------------------------
+        .ifdef __FastInterrupts                         
                 intr_main:
                         ldr     r0,=InterruptProcess
                         bx      r0
         .endif
-        .ifdef __SingleInterrupts                        @ Single interrupts support
+
+@---------------------------------------------------------------------------------
+@ Single Interrupts
+@---------------------------------------------------------------------------------
+        .ifdef __SingleInterrupts                       
                 intr_main:
                         mov     r3, #0x4000000           @ REG_BASE
                         ldr     r2, [r3,#0x200]!         @ Read REG_IE
@@ -258,7 +265,11 @@ CIDExit:
                         ldr     r0, [r2]                 @ Jump to user IRQ process
                         bx      r0                     
         .endif
-        .ifdef __MultipleInterrupts                      @ Multiple interrupts support
+
+@---------------------------------------------------------------------------------
+@ Multiple Interrupts
+@---------------------------------------------------------------------------------
+        .ifdef __MultipleInterrupts                      
                 intr_main:       
                         mov     r2, #0x4000000           @ REG_BASE
                         ldr     r3, [r2,#0x200]!         @ r2 = IE : r3 = IF|IE

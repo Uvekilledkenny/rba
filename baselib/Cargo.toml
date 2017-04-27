@@ -3,4 +3,7 @@ name = "baselib"
 version = "0.0.1"
 authors = ["uvekilledkenny"]
 
-[dependencies]
+[dependencies.ioreg]
+git = "https://github.com/hackndev/zinc.git"
+branch = "master"
+path = "ioreg"
