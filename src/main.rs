@@ -71,7 +71,8 @@ pub mod hw {
             asm!("swi #0x5000" ::: "r0", "r1", "r2", "r3" : "volatile");
         }
     }
-
+    
+    #[inline]
     #[cfg(not(target_feature = "-thumb-mode"))]
     pub fn wait_vblank() {
         unsafe {
