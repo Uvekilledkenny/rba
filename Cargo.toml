@@ -1,5 +1,5 @@
 [package]
-name = "thumb"
+name = "game"
 version = "0.0.1"
 authors = ["uvekilledkenny"]
 
@@ -9,8 +9,4 @@ opt-level = 3
 lto = true
 
 [lib]
-name="thumb"
 crate-type = ["staticlib"]
-
-[dependencies]
-baselib = { path = "../baselib" }

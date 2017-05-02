@@ -1,3 +1,5 @@
+Rust Test for GBA
+
 What I used to make this :
         https://www.coranac.com/tonc/text/toc.htm
         https://github.com/tbelaire/rusty-TONC
@@ -14,3 +16,27 @@ What I used to make this :
 ToDo:
     ARM/Thumb switching 
     a complete library.
+    include_image!()
+    include_sound!()
+
+https://github.com/langest/ezgba/blob/master/src/src/patch.cpp
+https://github.com/IanFinlayson/png2gba/blob/master/png2gba.c => macro (https://github.com/rust-lang/rust/blob/master/src/libsyntax/ext/source_util.rs#L173)
+
+Image Decoding : https://github.com/PistonDevelopers/image
+
+http://cs.umw.edu/~finlayson/class/spring16/cpsc305/
+http://cs.umw.edu/~finlayson/class/spring16/cpsc305/notes/15-sprites.html
+
+https://ezflash.sosuke.com/viewtopic.php?f=13&t=20397
+https://ezflash.sosuke.com/viewtopic.php?f=13&t=16783
+https://ezflash.sosuke.com/viewtopic.php?f=2&t=719&start=60
+
+https://zinc.rs/apidocs/ioreg/index.html
+
+http://members.iinet.net.au/~freeaxs/gbacomp/#MOD%20Players
+
+http://gbadev.org/docs.php
+
+https://github.com/pret/pokeruby
+
+http://www.keil.com/pack/doc/CMSIS/SVD/html/svd_Format_pg.html
