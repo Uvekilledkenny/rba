@@ -3,10 +3,4 @@ name = "game"
 version = "0.0.1"
 authors = ["uvekilledkenny"]
 
-[profile.release]
-panic = "abort"
-opt-level = 3
-lto = true
-
-[lib]
-crate-type = ["staticlib"]
+build = "build.rs"

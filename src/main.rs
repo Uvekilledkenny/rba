@@ -1,12 +1,14 @@
-#![feature(lang_items, target_feature, asm)]
+#![feature(lang_items, target_feature, asm, cfg_target_feature)]
 #![allow(dead_code)]
 #![no_std]
+#![no_main]
 
 #[lang = "eh_personality"]
 pub extern "C" fn rust_eh_personality() {}
 
+#[no_mangle]
 #[lang = "panic_fmt"]
-pub extern "C" fn rust_begin_panic() {}
+pub extern "C" fn panic_fmt() {}
 
 pub mod hw {
     use core::ptr::{read_volatile, write_volatile};
@@ -21,24 +23,20 @@ pub mod hw {
 
     macro_rules! hw_reg {
             (rw $addr: expr, $read:ident, $write: ident) => {
-                #[allow(dead_code)]
                 pub fn $read() -> u16 {
                     unsafe { read16($addr) }
                 }
 
-                #[allow(dead_code)]
                 pub fn $write(value: u16) {
                     unsafe { write16($addr, value) }
                 }
             };
             (r $addr: expr, $read: ident) => {
-                #[allow(dead_code)]
                 pub fn $read() -> u16 {
                     unsafe { read16($addr) }
                 }
             };
             (w $addr: expr, $write: ident) => {
-                #[allow(dead_code)]
                 pub fn $write(value: u16) {
                     unsafe { write16($addr, value) }
                 }
@@ -67,6 +65,14 @@ pub mod hw {
     }
     
     #[inline]
+    #[cfg(target_feature = "-thumb-mode")]
+    pub fn wait_vblank() {
+        unsafe {
+            asm!("swi #0x5000" ::: "r0", "r1", "r2", "r3" : "volatile");
+        }
+    }
+
+    #[cfg(not(target_feature = "-thumb-mode"))]
     pub fn wait_vblank() {
         unsafe {
             asm!("swi #0x5" ::: "r0", "r1", "r2", "r3" : "volatile");
@@ -88,9 +94,11 @@ pub extern "C" fn default() {}
 #[no_mangle]
 #[link_section = ".iwram"]
 #[target_feature = "-thumb-mode, +long-calls"]
+#[allow(non_upper_case_globals)]
 pub static IntrTable: [CFunc; 13] = 
     [vblank, default, default, default, default, default, 
     default, default, default, default, default, default, default];
+
 
 #[allow(non_snake_case)]
 #[no_mangle]
@@ -114,6 +122,6 @@ pub extern "C" fn AgbMain() {
     loop {
         hw::write_pal(15, 0x7fff - x);
         hw::wait_vblank();
-        x += 1;
+        x += 5;
     }
 }

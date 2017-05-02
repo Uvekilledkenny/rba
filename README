@@ -14,9 +14,9 @@ What I used to make this :
 
 
 ToDo:
-    ARM/Thumb switching 
+    ARM/Thumb switching (DONE)
     a complete library.
-    include_image!()
+    include_image!() (HALF DONE)
     include_sound!()
 
 https://github.com/langest/ezgba/blob/master/src/src/patch.cpp

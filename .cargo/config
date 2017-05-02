@@ -1,0 +1,7 @@
+[build]
+target = "gba"
+
+[target.gba]
+rustflags = [
+    "-C", "link-arg=-Tlayout.ld"
+]
