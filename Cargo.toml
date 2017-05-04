@@ -6,4 +6,4 @@ authors = ["uvekilledkenny"]
 build = "build.rs"
 
 [dependencies]
-png2gba = {path = "pnggba_macro"}
+png2gba = {path = "png2gba"}
