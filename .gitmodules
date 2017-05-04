@@ -1,0 +1,3 @@
+[submodule "png2gba"]
+	path = png2gba
+	url = https://github.com/Uvekilledkenny/png2gba.git
