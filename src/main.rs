@@ -1,4 +1,5 @@
-#![feature(lang_items, target_feature, asm, cfg_target_feature)]
+#![feature(lang_items, target_feature, asm, cfg_target_feature, plugin, closure_to_fn_coercion)]
+#![plugin(png2gba)]
 #![allow(dead_code)]
 #![no_std]
 #![no_main]
@@ -12,7 +13,7 @@ pub extern "C" fn panic_fmt() {}
 
 pub mod hw {
     use core::ptr::{read_volatile, write_volatile};
-    
+
     unsafe fn read16(addr: u32) -> u16 {
         read_volatile(addr as *const u16)
     }
@@ -23,20 +24,24 @@ pub mod hw {
 
     macro_rules! hw_reg {
             (rw $addr: expr, $read:ident, $write: ident) => {
+                #[inline(always)]
                 pub fn $read() -> u16 {
                     unsafe { read16($addr) }
                 }
 
+                #[inline(always)]
                 pub fn $write(value: u16) {
                     unsafe { write16($addr, value) }
                 }
             };
             (r $addr: expr, $read: ident) => {
+                #[inline(always)]
                 pub fn $read() -> u16 {
                     unsafe { read16($addr) }
                 }
             };
             (w $addr: expr, $write: ident) => {
+                #[inline(always)]
                 pub fn $write(value: u16) {
                     unsafe { write16($addr, value) }
                 }
@@ -51,28 +56,29 @@ pub mod hw {
     hw_reg!(w  0x04000202, write_regif);
     hw_reg!(w  0x04000208, write_regime);
 
-    
+    #[inline(always)]
     pub fn write_pal(index: u32, col: u16) {
         if index < 512 {
             unsafe { write16(0x5000000u32 + (index * 2) as u32, col) }
         }
     }
 
+    #[inline(always)]
     pub fn write_vram16(offset: u32, data: u16) {
         if offset < 0xc000 {
             unsafe { write16(0x6000000u32 + offset * 2, data) }
         }
     }
-    
-    #[inline]
+
+    #[inline(always)]
     #[cfg(target_feature = "-thumb-mode")]
     pub fn wait_vblank() {
         unsafe {
             asm!("swi #0x5000" ::: "r0", "r1", "r2", "r3" : "volatile");
         }
     }
-    
-    #[inline]
+
+    #[inline(always)]
     #[cfg(not(target_feature = "-thumb-mode"))]
     pub fn wait_vblank() {
         unsafe {
@@ -81,29 +87,25 @@ pub mod hw {
     }
 }
 
-type CFunc = extern "C" fn();
-
-#[link_section=".iwram"]
-#[target_feature = "-thumb-mode, +long-calls"]
-pub extern "C" fn vblank() {
-    hw::write_regifbios(1);
-    hw::write_regif(1);
-}
-
-pub extern "C" fn default() {}
-
 #[no_mangle]
 #[link_section = ".iwram"]
-#[target_feature = "-thumb-mode, +long-calls"]
-#[allow(non_upper_case_globals)]
-pub static IntrTable: [CFunc; 13] = 
-    [vblank, default, default, default, default, default, 
-    default, default, default, default, default, default, default];
+pub static mut INTR_TABLE: [Option<fn()>; 13] = [None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None,
+                                                None];
 
 
-#[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn AgbMain() {
+pub extern "C" fn agb_main() {
     hw::write_dispstat(1 << 3);
     hw::write_regie(1);
     hw::write_regime(1);
@@ -112,7 +114,7 @@ pub extern "C" fn AgbMain() {
     hw::write_bg0cnt(1 << 8);
     hw::write_pal(15, 0x7fff);
     hw::write_pal(31, 31 << 5);
-    
+
     for i in 1..7 {
         hw::write_vram16(i * 2, 0xfff0);
         hw::write_vram16(i * 2 + 1, 0x0fff);
@@ -121,8 +123,8 @@ pub extern "C" fn AgbMain() {
     let mut x = 1u16;
 
     loop {
-        hw::write_pal(15, 0x7fff - x);
         hw::wait_vblank();
+        hw::write_pal(15, 0x7fff - x);
         x += 5;
     }
 }

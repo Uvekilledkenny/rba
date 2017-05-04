@@ -4,3 +4,6 @@ version = "0.0.1"
 authors = ["uvekilledkenny"]
 
 build = "build.rs"
+
+[dependencies]
+png2gba = {path = "pnggba_macro"}

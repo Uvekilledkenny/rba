@@ -1,13 +1,8 @@
         .text
-
-@       .equ __FastInterrupts, 1
-        .equ __SingleInterrupts, 1
-@       .equ __MultipleInterrupts, 1
-
-	.global     _start
+		.global     _start
 	
         .align
-	.arm
+		.arm
 
 @---------------------------------------------------------------------------------
 _start:
@@ -23,7 +18,7 @@ _start:
 	.fill	7,1,0			@ unused
 	.byte	0x00			@ Software Version No (80000BCh)
 	.byte	0xf0			@ Complement Check (80000BDh)
-	.byte	0x00,0x00    		@ Checksum (80000BEh)
+	.byte	0x00,0x00    	@ Checksum (80000BEh)
 
         .align
         .arm
@@ -32,7 +27,7 @@ _start:
 rom_header_end:
 @---------------------------------------------------------------------------------
 	b	    start_vector	        @ This branch must be here for proper
-						@ positioning of the following header.
+									@ positioning of the following header.
 	.global     start_vector
 	.align
         .arm
@@ -40,10 +35,10 @@ rom_header_end:
 @---------------------------------------------------------------------------------
 start_vector:
 @---------------------------------------------------------------------------------
-	mov	r0, #0x12			@ Switch to IRQ Mode
+	mov	r0, #0x12				@ Switch to IRQ Mode
 	msr	cpsr, r0
 	ldr	sp, =__sp_irq			@ Set IRQ stack
-	mov	r0, #0x1f			@ Switch to System Mode
+	mov	r0, #0x1f				@ Switch to System Mode
 	msr	cpsr, r0
 	ldr	sp, =__sp_usr			@ Set user stack
 
@@ -59,7 +54,7 @@ start_vector:
 @ Interrupt Support
 @---------------------------------------------------------------------------------
         ldr     r1, =__intr_vector_buf          @ Set Interrupt Address
-        ldr     r0, =intr_main
+        ldr     r0, =IntrMain
         str     r0, [r1]
 
 @---------------------------------------------------------------------------------
@@ -91,8 +86,8 @@ DoEWRAMClear:					@ Clear External WRAM to 0x00
 @---------------------------------------------------------------------------------
 	ldr	r2,= __load_stop_iwram0
 	ldr	r1,= __load_start_iwram0
-	sub	r3, r2, r1			@ Is there any data to copy?
-	beq	CIW0Skip			@ no
+	sub	r3, r2, r1				@ Is there any data to copy?
+	beq	CIW0Skip				@ no
 
 	ldr	r2,= __iwram_overlay_start
 	bl	CopyMem
@@ -112,7 +107,7 @@ CEW0Skip:
 @---------------------------------------------------------------------------------
 @ Jump to user code
 @---------------------------------------------------------------------------------
-	ldr	r3, =AgbMain
+	ldr	r3, =agb_main
 	bl	_blx_r3_stub
 
 @---------------------------------------------------------------------------------
@@ -190,165 +185,91 @@ CIDExit:
         .pool
 
 @---------------------------------------------------------------------------------
-@ Interrupt Support
+@ Interrupt Handler
 @---------------------------------------------------------------------------------
-        .section .iwram, "ax" ,%progbits
-        .extern IntrTable
-        .extern InterruptProcess
-        .global intr_main
+	.section	.iwram,"ax",%progbits
+	.extern	INTR_TABLE
+	.code 32
 
-        .arm
+	.global	IntrMain
+@---------------------------------------------------------------------------------
+IntrMain:
+@---------------------------------------------------------------------------------
+	mov	r3, #0x4000000			@ REG_BASE
+	ldr	r2, [r3,#0x200]			@ Read	REG_IE
 
-@---------------------------------------------------------------------------------
-@ Fast Interrupts
-@---------------------------------------------------------------------------------
-        .ifdef __FastInterrupts                         
-                intr_main:
-                        ldr     r0,=InterruptProcess
-                        bx      r0
-        .endif
+	ldr	r1, [r3, #0x208]		@ r1 = IME
+	str	r3, [r3, #0x208]		@ disable IME
+	mrs	r0, spsr
+	stmfd	sp!, {r0-r1,r3,lr}	@ {spsr, IME, REG_BASE, lr_irq}
 
-@---------------------------------------------------------------------------------
-@ Single Interrupts
-@---------------------------------------------------------------------------------
-        .ifdef __SingleInterrupts                       
-                intr_main:
-                        mov     r3, #0x4000000           @ REG_BASE
-                        ldr     r2, [r3,#0x200]!         @ Read REG_IE
-                        and     r1, r2, r2, lsr #16      @ r1 = IE & IF
-                        ldr     r2, =IntrTable
-                        ands    r0, r1, #1               @ V-Blank Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #2               @ H-Blank Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #4               @ V Counter Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #8               @ Timer 0 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x10            @ Timer 1 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x20            @ Timer 2 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x40            @ Timer 3 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x80            @ Serial Communication Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x100           @ DMA0 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x200           @ DMA1 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x400           @ DMA2 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x800           @ DMA3 Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x1000          @ Key Interrupt
-                        bne     jump_intr
-                        add     r2, r2, #4
-                        ands    r0, r1, #0x2000          @ Cart Interrupt
-                        strneb  r0, [r3, #0x84 - 0x200]  @ Stop sound if cart removed (REG_SOUNDCNT_X)
-                loop:   
-                        bne     loop
-                jump_intr:
-                        strh    r0, [r3, #2]             @ IF Clear
-                        ldr     r0, [r2]                 @ Jump to user IRQ process
-                        bx      r0                     
-        .endif
+	and	r1, r2,	r2, lsr #16	@ r1 =	IE & IF
+
+	ldrh	r2, [r3, #-8]		@\mix up with BIOS irq flags at 3007FF8h,
+	orr	r2, r2, r1				@ aka mirrored at 3FFFFF8h, this is required
+	strh	r2, [r3, #-8]		@/when using the (VBlank)IntrWait functions
+
+	ldr	r2,=INTR_TABLE
+	add	r3,r3,#0x200
 
 @---------------------------------------------------------------------------------
-@ Multiple Interrupts
+findIRQ:
 @---------------------------------------------------------------------------------
-        .ifdef __MultipleInterrupts                      
-                intr_main:       
-                        mov     r2, #0x4000000           @ REG_BASE
-                        ldr     r3, [r2,#0x200]!         @ r2 = IE : r3 = IF|IE
-                        ldrh    r1, [r2, #0x8]           @ r1 = IME
-                        mrs     r0, spsr
-                        stmfd   sp!, {r0-r2,lr}          @ {spsr, IME, REG_IE, lr}  // IF|IE
-                        mov     r0, #1                   
-                        strh    r0, [r2, #0x8]
-                        and     r1, r3, r3, lsr #16      @ r1 = IE & IF
-                        ldr     r12, =IntrTable
-                        ands    r0, r1, #1               @ V-blank interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #2               @ H-blank interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #4               @ V-counter interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #8               @ Timer 0 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x10            @ Timer 1 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x20            @ Timer 2 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x40            @ Timer 3 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x80            @ Serial Communication Interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x100           @ DMA 0 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x200           @ DMA 1 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x400           @ DMA 2 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x800           @ DMA 3 interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x1000          @ Key interrupt
-                        bne     jump_intr
-                        add     r12,r12, #4
-                        ands    r0, r1, #0x2000          @ Cart interrupt
-                        strneb  r0, [r3, #0x84 - 0x200]  @ Stop sound if cart removed (REG_SOUNDCNT_X)
-                loop:   
-                        bne     loop
-                jump_intr:
-                        strh    r0, [r2, #2]             @ Clear IF
-                        mrs     r3, cpsr
-                        bic     r3, r3, #0xc0            @ Enable IRQ & FIQ
-                        msr     cpsr, r3
-                        ldr     r0, [r12]
-                        stmfd   sp!, {lr}
-                        adr     lr, IntrRet
-                        bx      r0
-                IntrRet:
-                        ldmfd   sp!, {lr}
-                        mrs     r3, cpsr
-                        orr     r3, r3, #0x80
-                        msr     cpsr, r3
-                        ldmfd   sp!, {r0-r2,lr}          @ {spsr, IME, REG_IE, lr}  //IF|IE
-                        strh    r1,  [r2, #0x8]          @ restore REG_IME
-                        msr     spsr, r0                 @ restore spsr
-                        bx      lr
+	ldr	r0, [r2, #4]			@ Interrupt mask
+	cmp	r0,#0
+	beq	no_handler
+	ands	r0, r0, r1
+	bne	jump_intr
+	add	r2, r2, #8
+	b	findIRQ
 
-                .align
-                .pool
+@---------------------------------------------------------------------------------
+no_handler:
+@---------------------------------------------------------------------------------
+	strh	r1, [r3, #0x02]		@ IF Clear
+	ldmfd	sp!, {r0-r1,r3,lr}	@ {spsr, IME, REG_BASE, lr_irq}
+	str	r1, [r3, #0x208]		@ restore REG_IME
+	mov	pc,lr
 
-                intr_main_end:
-        .endif
+@---------------------------------------------------------------------------------
+jump_intr:
+@---------------------------------------------------------------------------------
+	ldr	r2, [r2]				@ user IRQ handler address
+	cmp	r2, #0
+	beq	no_handler
 
-        .align
+@---------------------------------------------------------------------------------
+got_handler:
+@---------------------------------------------------------------------------------
+
+	mrs	r1, cpsr
+	bic	r1, r1, #0xdf			@ \__
+	orr	r1, r1, #0x1f			@ /  --> Enable IRQ & FIQ. Set CPU mode to System.
+	msr	cpsr,r1
+
+	strh	r0, [r3, #0x02]		@ IF Clear
+	
+	push	{lr}
+	adr	lr, IntrRet
+	bx	r2
+
+@---------------------------------------------------------------------------------
+IntrRet:
+@---------------------------------------------------------------------------------
+	pop	{lr}
+	mov	r3, #0x4000000			@ REG_BASE
+	str	r3, [r3, #0x208]		@ disable IME
+
+	mrs	r3, cpsr
+	bic	r3, r3, #0xdf			@ \__
+	orr	r3, r3, #0x92			@ /  --> Disable IRQ. Enable FIQ. Set CPU mode to IRQ.
+	msr	cpsr, r3
+
+	ldmfd   sp!, {r0-r1,r3,lr}	@ {spsr, IME, REG_BASE, lr_irq}
+	str	r1, [r3, #0x208]		@ restore REG_IME
+	msr	spsr, r0				@ restore spsr
+	mov	pc,lr
+
+    .align
 	.pool
-
 	.end
